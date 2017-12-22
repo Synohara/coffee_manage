@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>ユーザー登録!</title>
+</head>
+<body>
+  <div class="page">
+    <h1>入力してね!</h1>    
+    <!-- ユーザ登録用のフォームを追加 -->
+    <form action="{{ url_for('add_user') }}" method="post" class="add-user">
+      <label for="username">Name:</label>
+      <input type="text" size="30" id="username" name="username">
+      <label for="password">Password:</label>
+      <input type="text" size="30" id="password" name="password">
+      <input type="submit" value="Add">
+    </form>
+  </div>
+</body>
+</html>
