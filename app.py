@@ -14,8 +14,7 @@ from werkzeug.utils import secure_filename
 import json
 import numpy as np
 import sys
-reload(sys)
-sys.setdefaultencoding('utf-8')
+import importlib
 from flask.ext.login import LoginManager, UserMixin, \
                                 login_required, login_user, logout_user ,current_user
 
@@ -38,19 +37,31 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/coffee_manage.db'
 db = SQLAlchemy(app)
 
 class User(db.Model):
-    __tablename__ = 'coffee_manage'
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True)
+    __tablename__ = 'coffee_user2'
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    username = db.Column(db.String(80))
     password = db.Column(db.String(80))
-    coffee_num = db.Column(db.Integer)
 
-    def __init__(self, username, coffee_num, password):
+
+    def __init__(self, username, password):
         self.username = username
-        self.coffee_num = coffee_num
         self.password = password
 
     def __repr__(self):
         return '<User %r>' % self.username
+
+class Coffee_Count(db.Model):
+    __tablename__ = 'coffee_count2'
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id = db.Column(db.Integer)
+    timestamp = db.Column(db.DATETIME, nullable=True)
+    check = db.Column(db.Boolean)
+    def __init__(self,user_id,timestamp, check):
+        self.user_id = user_id
+        self.timestamp = timestamp
+        self.check = check
+
+
 
 class Login_User(UserMixin):
 
@@ -59,7 +70,7 @@ class Login_User(UserMixin):
         user = db.session.query(User).filter_by(id=id).first()
         self.name = user.username
         self.password = user.password
-        
+
     def __repr__(self):
         return "%d/%s/%s" % (int(self.id), self.name, self.password)
 
@@ -72,9 +83,13 @@ def index():
     print(current_user.name)
     print(current_user.password)
     title = "ようこそ"
+    coffee_num = {}
+    for i in range(db.session.query(User).count()):
+        coffee_num[i+1] = db.session.query(Coffee_Count).filter_by(user_id=i+1).count()
+    print(coffee_num)
     users = User.query.all()
     return render_template('index.html',
-                        title=title, users=users)
+                        title=title, users=users, coffee_num=coffee_num)
 
 @app.route('/post', methods=['GET', 'POST'])
 def post():
@@ -96,14 +111,17 @@ def line_post():
     token = "a6C0ofjqzEp40YiKnJuaZY4fpSRUTA9eHixZIm75tLL"
     headers = {"Authorization" : "Bearer "+ token}
     message = ""
-    user = db.session.query(User).filter_by(username=current_user.name).first() 
-    message += user.__dict__.values()[0] + "さんが飲んどるのは" + str(user.__dict__.values()[4]) + "杯やで"
+    coffee_num = {}
+    for i in range(db.session.query(User).count()):
+        coffee_num[i+1] = db.session.query(Coffee_Count).filter_by(user_id=i+1).count()
+    user = db.session.query(User).filter_by(username=current_user.name).first()
+    message += user.__dict__.values()[0] + "さんが飲んどるのは" + str(coffee_num[user.id]) + "杯やで"
 
     payload = {"message" :  message}
     r = requests.post(url ,headers = headers ,params=payload)
     return redirect('/')
 
- 
+
 
 
 # add_user メソッドを追加し、ユーザ登録に関する処理を行う
@@ -112,10 +130,10 @@ def add_user():
     # フォームから渡ってきた username を取得
     username = request.form.get('username')
     password = request.form.get('password')
-    
+
     if username:
         # 前回、手動で対応した処理と同じ
-        user = User(username,0,password)
+        user = User(username,password)
         db.session.add(user)
         db.session.commit()
     else:
@@ -128,22 +146,32 @@ def increment():
     if request.method == 'POST':
         cofee_name = request.form["form1"]
         user = db.session.query(User).filter_by(username=cofee_name).first()
-        user.coffee_num += 1
-        db.session.add(user)
+        timestamp = datetime.now()
+        coffee = Coffee_Count(user.id, timestamp, False)
+
+        db.session.add(coffee)
         db.session.commit()
+        coffee_num = {}
+        for i in range(db.session.query(User).count()):
+            coffee_num[i+1] = db.session.query(Coffee_Count).filter_by(user_id=i+1).count()
+        print(coffee_num)
         users = User.query.all()
-        return render_template('index.html',  users=users)
+        return render_template('index.html',  users=users, coffee_num=coffee_num)
 
 @app.route('/decrement',methods=['POST'])
 def decrement():
     if request.method == 'POST':
         cofee_name = request.form["form3"]
         user = db.session.query(User).filter_by(username=cofee_name).first()
-        user.coffee_num -= 1
-        db.session.add(user)
+        record = db.session.query(Coffee_Count).filter_by(user_id=user.id).order_by( " id desc " ).first()
+        db.session.delete(record)
         db.session.commit()
+        coffee_num = {}
+        for i in range(db.session.query(User).count()):
+            coffee_num[i+1] = db.session.query(Coffee_Count).filter_by(user_id=i+1).count()
+        print(coffee_num)
         users = User.query.all()
-        return render_template('index.html',  users=users)
+        return render_template('index.html',  users=users, coffee_num=coffee_num)
 
 @app.route('/delete',methods=['POST'])
 def delete():
@@ -160,7 +188,7 @@ def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        loguser = db.session.query(User).filter_by(username=username).first() 
+        loguser = db.session.query(User).filter_by(username=username).first()
         try:
             if password == loguser.password:
                 user = Login_User(loguser.id)
@@ -168,7 +196,7 @@ def login():
                 return redirect('/')
             else:
                 return abort(401)
-        except: 
+        except:
             return redirect('/')
     else:
         return Response('''
@@ -190,14 +218,11 @@ def logout():
 @app.errorhandler(401)
 def page_not_found(e):
     return redirect('http://yahoo.co.jp')
-     
-# callback to reload the user object        
+
+# callback to reload the user object
 @login_manager.user_loader
 def load_user(userid):
     return Login_User(userid)
 # Start application
 if __name__ == '__main__':
     app.run(host='0.0.0.0')
-
-
-
