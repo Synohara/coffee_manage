@@ -39,13 +39,14 @@ db = SQLAlchemy(app)
 class User(db.Model):
     __tablename__ = 'coffee_user2'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    username = db.Column(db.String(80))
+    username = db.Column(db.String(80), unique=True)
     password = db.Column(db.String(80))
+    credit = db.Column(db.Integer)
 
-
-    def __init__(self, username, password):
+    def __init__(self, username, password, credit):
         self.username = username
         self.password = password
+        self.credit = credit
 
     def __repr__(self):
         return '<User %r>' % self.username
@@ -56,7 +57,8 @@ class Coffee_Count(db.Model):
     user_id = db.Column(db.Integer)
     timestamp = db.Column(db.DATETIME, nullable=True)
     check = db.Column(db.Boolean)
-    def __init__(self,user_id,timestamp, check):
+
+    def __init__(self, user_id, timestamp, check):
         self.user_id = user_id
         self.timestamp = timestamp
         self.check = check
@@ -70,9 +72,10 @@ class Login_User(UserMixin):
         user = db.session.query(User).filter_by(id=id).first()
         self.name = user.username
         self.password = user.password
+        self.credit = user.credit
 
     def __repr__(self):
-        return "%d/%s/%s" % (int(self.id), self.name, self.password)
+        return "%d/%s/%s/%d" % (int(self.id), self.name, self.password, self.credit)
 
 
 
@@ -84,12 +87,14 @@ def index():
     print(current_user.password)
     title = "ようこそ"
     coffee_num = {}
+    check = {}
     for i in range(db.session.query(User).count()):
         coffee_num[i+1] = db.session.query(Coffee_Count).filter_by(user_id=i+1).count()
+        check[i+1] = db.session.query(Coffee_Count).filter_by(user_id=i+1, check=False).count()
     print(coffee_num)
     users = User.query.all()
     return render_template('index.html',
-                        title=title, users=users, coffee_num=coffee_num)
+                        title=title, users=users, coffee_num=coffee_num, check=check)
 
 @app.route('/post', methods=['GET', 'POST'])
 def post():
@@ -133,7 +138,7 @@ def add_user():
 
     if username:
         # 前回、手動で対応した処理と同じ
-        user = User(username,password)
+        user = User(username,password,0)
         db.session.add(user)
         db.session.commit()
     else:
@@ -147,16 +152,27 @@ def increment():
         cofee_name = request.form["form1"]
         user = db.session.query(User).filter_by(username=cofee_name).first()
         timestamp = datetime.now()
-        coffee = Coffee_Count(user.id, timestamp, False)
+        if user.credit >= 1:
+            user.credit -= 1
+            db.session.add(user)
+            db.session.commit()
+            coffee = Coffee_Count(user.id, timestamp, True)
+        else:
+            user.credit -= 1
+            db.session.add(user)
+            db.session.commit()
+            coffee = Coffee_Count(user.id, timestamp, False)
 
         db.session.add(coffee)
         db.session.commit()
         coffee_num = {}
+        check = {}
         for i in range(db.session.query(User).count()):
             coffee_num[i+1] = db.session.query(Coffee_Count).filter_by(user_id=i+1).count()
+            check[i+1] = db.session.query(Coffee_Count).filter_by(user_id=i+1, check=False).count()
         print(coffee_num)
         users = User.query.all()
-        return render_template('index.html',  users=users, coffee_num=coffee_num)
+        return render_template('index.html',  users=users, coffee_num=coffee_num, check=check)
 
 @app.route('/decrement',methods=['POST'])
 def decrement():
@@ -164,14 +180,21 @@ def decrement():
         cofee_name = request.form["form3"]
         user = db.session.query(User).filter_by(username=cofee_name).first()
         record = db.session.query(Coffee_Count).filter_by(user_id=user.id).order_by( " id desc " ).first()
+        if (datetime.now()-record.timestamp).days==0:
+            user.credit += 1
+            db.session.add(user)
+            db.session.commit()
+
         db.session.delete(record)
         db.session.commit()
         coffee_num = {}
+        check = {}
         for i in range(db.session.query(User).count()):
             coffee_num[i+1] = db.session.query(Coffee_Count).filter_by(user_id=i+1).count()
+            check[i+1] = db.session.query(Coffee_Count).filter_by(user_id=i+1, check=False).count()
         print(coffee_num)
         users = User.query.all()
-        return render_template('index.html',  users=users, coffee_num=coffee_num)
+        return render_template('index.html',  users=users, coffee_num=coffee_num, check=check)
 
 @app.route('/delete',methods=['POST'])
 def delete():
