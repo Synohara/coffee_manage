@@ -7,10 +7,10 @@
             <thead>
                 <th>名前</th>
                 <th>杯数</th>
+                <th>クレジット</th>
+                <th>未払い</th>
                 <th></th>
                 <th></th>
-                <th></th>
-
             </thead>
         <tbody>
                 {% for user in users %}
@@ -23,23 +23,49 @@
                 </td>
                 <td>
                     {% if user.username == current_user.name %}
+                    {{ user.credit }} 杯
+                    {% endif %}
+                </td>
+                <td>
+                    {% if user.username == current_user.name %}
+                    {{ check[user.id] }} 杯
+                    {% endif %}
+                </td>
+                <td>
+                    {% if user.username == current_user.name %}
                     <form action="/increment" method="post" class="form-inline">
-                    <button type="submit" class="btn btn-default" name="form1" value={{user.username}}>追加</button>
+                    <button href="#" type="submit" class="btn waves-effect waves-light" onclick="Materialize.toast('Have a nice coffee!☕️', 3000)" name="form1" value={{user.username}}>追加</button>
                     </form>
                     {% endif %}
                 </td>
                 <td>
                     {% if user.username == current_user.name %}
                     <form action="/decrement" method="post" class="form-inline">
-                    <button type="submit" class="btn btn-default" name="form3" value={{user.username}}>減らす</button>
+                    <button href="#" type="submit" class="btn waves-effect waves-light" onclick="Materialize.toast('Coffee has canceled...😭', 3000)" name="form3" value={{user.username}}>減らす</button>
                     </form>
                     {% endif %}
+                </td>
+                <td>
+                  {% if user.username == current_user.name %}
+                  <div class="charge credit">
+                    <select>
+                      <option value="" disabled selected>Select charge credit</option>
+                      <option value="1">1杯分(20円)</option>
+                      <option value="2">5杯分(100円)</option>
+                      <option value="3">10杯分(200円)</option>
+                      <option value="4">-1ヶ月セット- 31杯分(600円)</option>
+                      <option value="5">-3ヶ月セット- 100杯分(1800円)</option>
+                    </select>
+                    <label>チャージ用フォーム</label>
+                  </div>
+                  {% endif %}
+                </td>
             </tr>
             {% endfor %}
         </tbody>
         </table>
         <form action="/logout" method="post" class="form-inline">
-        <button type="submit" class="btn btn-default" name="form3" }>ログアウト</button>
+        <button type="submit" class="btn waves-effect waves-light" onclick="Materialize.toast('See you next coffee!👋', 3000)" name="form3" }>ログアウト</button>
         </form>
 
 
