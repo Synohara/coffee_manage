@@ -17,6 +17,7 @@ import sys
 import importlib
 from flask.ext.login import LoginManager, UserMixin, \
                                 login_required, login_user, logout_user ,current_user
+#import coffee_twitter.py as ct
 
 
 
@@ -41,12 +42,12 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     username = db.Column(db.String(80), unique=True)
     password = db.Column(db.String(80))
-    credit = db.Column(db.Integer)
+    twitter = db.Column(db.String(80))
 
-    def __init__(self, username, password, credit):
+    def __init__(self, username, password, twitter):
         self.username = username
         self.password = password
-        self.credit = credit
+        self.twitter = twitter
 
     def __repr__(self):
         return '<User %r>' % self.username
@@ -72,10 +73,10 @@ class Login_User(UserMixin):
         user = db.session.query(User).filter_by(id=id).first()
         self.name = user.username
         self.password = user.password
-        self.credit = user.credit
+        self.twitter = user.twitter
 
     def __repr__(self):
-        return "%d/%s/%s/%d" % (int(self.id), self.name, self.password, self.credit)
+        return "%d/%s/%s/%d/%s" % (int(self.id), self.name, self.password, self.twitter)
 
 
 
@@ -127,8 +128,6 @@ def line_post():
     return redirect('/')
 
 
-
-
 # add_user メソッドを追加し、ユーザ登録に関する処理を行う
 @app.route("/add_user", methods=['POST','GET'])
 def add_user():
@@ -152,17 +151,7 @@ def increment():
         cofee_name = request.form["form1"]
         user = db.session.query(User).filter_by(username=cofee_name).first()
         timestamp = datetime.now()
-        if user.credit >= 1:
-            user.credit -= 1
-            db.session.add(user)
-            db.session.commit()
-            coffee = Coffee_Count(user.id, timestamp, True)
-        else:
-            user.credit -= 1
-            db.session.add(user)
-            db.session.commit()
-            coffee = Coffee_Count(user.id, timestamp, False)
-
+        coffee = Coffee_Count(user.id, timestamp, False)
         db.session.add(coffee)
         db.session.commit()
         coffee_num = {}
@@ -180,11 +169,6 @@ def decrement():
         cofee_name = request.form["form3"]
         user = db.session.query(User).filter_by(username=cofee_name).first()
         record = db.session.query(Coffee_Count).filter_by(user_id=user.id).order_by( " id desc " ).first()
-        if (datetime.now()-record.timestamp).days==0:
-            user.credit += 1
-            db.session.add(user)
-            db.session.commit()
-
         db.session.delete(record)
         db.session.commit()
         coffee_num = {}

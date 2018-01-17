@@ -7,7 +7,6 @@
             <thead>
                 <th>名前</th>
                 <th>杯数</th>
-                <th>クレジット</th>
                 <th>未払い</th>
                 <th></th>
                 <th></th>
@@ -20,11 +19,6 @@
                 </td>
                 <td>
                     {{ coffee_num[user.id] }} 杯
-                </td>
-                <td>
-                    {% if user.username == current_user.name %}
-                    {{ user.credit }} 杯
-                    {% endif %}
                 </td>
                 <td>
                     {% if user.username == current_user.name %}
@@ -45,21 +39,7 @@
                     </form>
                     {% endif %}
                 </td>
-                <td>
-                  {% if user.username == current_user.name %}
-                  <div class="charge credit">
-                    <select>
-                      <option value="" disabled selected>Select charge credit</option>
-                      <option value="1">1杯分(20円)</option>
-                      <option value="2">5杯分(100円)</option>
-                      <option value="3">10杯分(200円)</option>
-                      <option value="4">-1ヶ月セット- 31杯分(600円)</option>
-                      <option value="5">-3ヶ月セット- 100杯分(1800円)</option>
-                    </select>
-                    <label>チャージ用フォーム</label>
-                  </div>
-                  {% endif %}
-                </td>
+                
             </tr>
             {% endfor %}
         </tbody>
