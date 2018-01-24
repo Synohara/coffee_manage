@@ -134,10 +134,11 @@ def add_user():
     # フォームから渡ってきた username を取得
     username = request.form.get('username')
     password = request.form.get('password')
+    twitter = request.form.get('twitter')
 
     if username:
         # 前回、手動で対応した処理と同じ
-        user = User(username,password,0)
+        user = User(username,password,twitter)
         db.session.add(user)
         db.session.commit()
     else:
@@ -232,4 +233,4 @@ def load_user(userid):
     return Login_User(userid)
 # Start application
 if __name__ == '__main__':
-    app.run(host='0.0.0.0')
+    app.run(host='0.0.0.0',debug=True, port=2000)

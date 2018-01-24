@@ -10,6 +10,7 @@
                 <th>未払い</th>
                 <th></th>
                 <th></th>
+                <th></th>
             </thead>
         <tbody>
                 {% for user in users %}
@@ -39,7 +40,15 @@
                     </form>
                     {% endif %}
                 </td>
-                
+                <td>
+                  {% if user.username == current_user.name %}
+
+                  {% set text='@tipmona tip @ikedalab_coffee ' %}
+
+                  <a class="waves-effect waves-light btn" href="https://twitter.com/intent/tweet?text={{ text }}{{ check[user.id]*0.02 }}" target=”_blank”>支払い</a>
+                  {% endif %}
+                </td>
+
             </tr>
             {% endfor %}
         </tbody>
