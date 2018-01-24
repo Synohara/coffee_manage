@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-CONSUMER_KEY        = 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
-CONSUMER_SECRET_KEY = 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
-ACCESS_TOKEN        = 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
-ACCESS_TOKEN_SECRET = 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+CONSUMER_KEY        = 'YuF55ZTL4tV7BYOWr5sDdb9cI'
+CONSUMER_SECRET_KEY = 'TDsSGxWwBlJRRqADfJjpNU71B9480WBtf1UQSG9I0K35T1xF8l'
+ACCESS_TOKEN        = '951067067465134080-LdaB7am661mu4QDMX9kHctKtqTYE0wM'
+ACCESS_TOKEN_SECRET = 'f8dEgBd2MiyyIt3mS8fC7VZcyyEm8Ms02VvWHD4uaSHS8'
+
 
 from twitter import *
 import re
@@ -20,11 +21,11 @@ t = Twitter(auth=auth)
 
 
 #起動ツイート
-"""
+
 dt = datetime.now()
 status = "システム起動╰(　´◔　ω　◔ `)╯ "+dt.strftime('%Y/%m/%d %H:%M:%S')
 t.statuses.update(status=status) #Twitterに投稿
-"""
+
 
 #DBに接続
 engine = create_engine('sqlite:////tmp/coffee_manage.db', echo=True)
@@ -33,6 +34,8 @@ session = Session()
 
 #ツイートのみ
 status=["まあコーヒーでも飲めよ( ´･ω･)⊃☕️", "コーヒー( ･∀･)つ☕️ﾄﾞｿﾞｰ", "三╰( ^o^)╮-=ﾆ=☕️", "|Д`)ノ⌒☕️", "(☝️ ՞ਊ ՞)＝👉☕️)՞ਊ ՞)"] #投稿するツイート
+gtp=["ぽん(´◉‿ゝ◉`)✊", "ぽん(´◉‿ゝ◉`)✌️", "ぽん(´◉‿ゝ◉`)✋"]
+reaction=["せやな(´◉‿ゝ◉`)","そやな(´◉‿ゝ◉`)","それな(´◉‿ゝ◉`)","わかる(´◉‿ゝ◉`)","ほんま(´◉‿ゝ◉`)","ええんちゃう(´◉‿ゝ◉`)","あ　ほ　く　さ"]
 noreply_list = ["ikedalab_coffee", "zenytips", "tipmona"]
 #t.statuses.update(status=status) #Twitterに投稿
 
@@ -48,9 +51,9 @@ for msg in t_userstream.user():
             if v.get('screen_name') == "ikedalab_coffee" and (msg['user']['screen_name'] not in noreply_list):
                 print(msg['text'])
                 print(msg['user']['screen_name'])
-                if re.search(r"(test|テスト|てすと)", msg['text']): #testの部分を(tip|モナ|もな)に変える
+                if re.search(r"(tip|モナ|もな)", msg['text']): #testの部分を(tip|モナ|もな)に変える
 
-                    cache = re.sub(r'@\w+ (test|テスト|てすと) @ikedalab_coffee ', "", msg['text']) #r'(@tipmona (tip|モナ|もな)|@zenytips tip) @ikedalab_coffee '
+                    cache = re.sub(r'(@tipmona (tip|モナ|もな)|@zenytips tip) @ikedalab_coffee ', "", msg['text']) #r'(@tipmona (tip|モナ|もな)|@zenytips tip) @ikedalab_coffee '
                     #print(cache)
                     cup = int(float(cache) / mona_rate)
                     #print(cup)
@@ -63,10 +66,12 @@ for msg in t_userstream.user():
                             flag = True
                             print("登録済みアカウントです")
                             user = session.query(User).filter_by(twitter = msg['user']['screen_name']).first()
-
+                            count=0
                             for unpaid in session.query(Coffee_Count).filter_by(user_id=user.id).filter_by(check=False):
+                                #print(unpaid.check)
                                 unpaid.check = True
                                 cup -= 1
+                                count +=1
                                 if cup==0:
                                     break
 
@@ -79,7 +84,7 @@ for msg in t_userstream.user():
 
                     dt = datetime.now()
 
-                    tweet = "@"+msg['user']['screen_name']+" "+str(cup)+"杯分入金しました。(╹◡╹✿)"+" "+dt.strftime('%Y/%m/%d %H:%M:%S')
+                    tweet = "@"+msg['user']['screen_name']+" "+str(count)+"杯分入金しました。(╹◡╹✿)"+" "+dt.strftime('%Y/%m/%d %H:%M:%S')
                     if cup > 0:
                         tweet += "\n\n※入金額が未払い分を越えている可能性があります。管理者にお問い合わせください。"
                     t.statuses.update(status=tweet,in_reply_to_status_id=msg['id'])
@@ -98,6 +103,18 @@ for msg in t_userstream.user():
                         tweet = "@"+msg['user']['screen_name']+" "+"フォロー済みです！ヽ(•̀ω•́ )ゝ✧"
                         t.statuses.update(status=tweet,in_reply_to_status_id=msg['id'])
                         print(tweet)
+
+                elif re.search(r"(じゃんけん|あいこ)", msg['text']):
+                    randomtweet = gtp[random.randrange(len(gtp))]
+                    tweet = "@"+msg['user']['screen_name']+" "+randomtweet
+                    t.statuses.update(status=tweet,in_reply_to_status_id=msg['id'])
+                    print(tweet)
+
+                elif re.search(r"どう(思|おも|かな|です|よ)", msg['text']):
+                    randomtweet = reaction[random.randrange(len(reaction))]
+                    tweet = "@"+msg['user']['screen_name']+" "+randomtweet
+                    t.statuses.update(status=tweet,in_reply_to_status_id=msg['id'])
+                    print(tweet)
 
                 else:
                     randomtweet = status[random.randrange(len(status))]
